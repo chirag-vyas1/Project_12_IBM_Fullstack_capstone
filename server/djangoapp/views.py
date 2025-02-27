@@ -13,7 +13,7 @@ from django.contrib.auth import login, authenticate
 import logging
 import json
 from django.views.decorators.csrf import csrf_exempt
-# from .populate import initiate
+from .populate import initiate
 
 
 # Get an instance of a logger
@@ -46,9 +46,82 @@ def logout_request(request):
     return JsonResponse(data)
 
 # Create a `registration` view to handle sign up request
+@csrf_exempt
+def registration(request):
+    context = {}
+
+    data = json.loads(request.body)
+    username = data['userName']
+    password = data['password']
+    first_name = data['firstName']
+    last_name = data['lastName']
+    email = data['email']
+    username_exist = False
+    email_exist = False
+    try:
+        # Check if user already exists
+        User.objects.get(username=username)
+        username_exist = True
+    except:
+        # If not, simply log this is a new user
+        logger.debug("{} is new user".format(username))
+
+    # If it is a new user
+    if not username_exist:
+        # Create user in auth_user table
+        user = User.objects.create_user(username=username, first_name=first_name, last_name=last_name,password=password, email=email)
+        # Login the user and redirect to list page
+        login(request, user)
+        data = {"userName":username,"status":"Authenticated"}
+        return JsonResponse(data)
+    else :
+        data = {"userName":username,"error":"Already Registered"}
+        return JsonResponse(data)
 # @csrf_exempt
 # def registration(request):
-# ...
+#     if request.method != "POST":
+#         return JsonResponse({"error": "Invalid request"}, status=405)
+
+#     try:
+#         # Parse JSON body safely
+#         data = json.loads(request.body)
+#         username = data.get("userName")
+#         password = data.get("password")
+#         first_name = data.get("firstName")
+#         last_name = data.get("lastName")
+#         email = data.get("email")
+
+#         # Ensure all required fields are provided
+#         if not all([username, password, first_name, last_name, email]):
+#             return JsonResponse({"error": "All fields are required"}, status=400)
+
+#         # Check if username already exists
+#         if User.objects.filter(username=username).exists():
+#             return JsonResponse({"error": "Username already registered"}, status=400)
+
+#         # Check if email already exists
+#         if User.objects.filter(email=email).exists():
+#             return JsonResponse({"error": "Email already registered"}, status=400)
+
+#         # Create new user
+#         user = User.objects.create_user(
+#             username=username, first_name=first_name, 
+#             last_name=last_name, password=password, email=email
+#         )
+
+#         # Log the new user in
+#         login(request, user)
+
+#         return JsonResponse({"userName": username, "status": "Authenticated"}, status=201)
+
+#     except json.JSONDecodeError:
+#         return JsonResponse({"error": "Invalid JSON format"}, status=400)
+
+#     except Exception as e:
+#         logger.error(f"Registration error: {str(e)}")
+#         return JsonResponse({"error": "Internal server error"}, status=500)
+
+
 
 # # Update the `get_dealerships` view to render the index page with
 # a list of dealerships
