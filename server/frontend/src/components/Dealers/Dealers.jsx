@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import "./Dealers.css";
 import "../assets/style.css";
 import Header from '../Header/Header';
@@ -26,25 +26,46 @@ const Dealers = () => {
     }
   }
 
-  const get_dealers = async ()=>{
-    const res = await fetch(dealer_url, {
-      method: "GET"
-    });
-    const retobj = await res.json();
-    if(retobj.status === 200) {
-      let all_dealers = Array.from(retobj.dealers)
-      let states = [];
-      all_dealers.forEach((dealer)=>{
-        states.push(dealer.state)
-      });
+//   const get_dealers = async ()=>{
+//     const res = await fetch(dealer_url, {
+//       method: "GET"
+//     });
+//     const retobj = await res.json();
+//     if(retobj.status === 200) {
+//       let all_dealers = Array.from(retobj.dealers)
+//       let states = [];
+//       all_dealers.forEach((dealer)=>{
+//         states.push(dealer.state)
+//       });
 
-      setStates(Array.from(new Set(states)))
-      setDealersList(all_dealers)
+//       setStates(Array.from(new Set(states)))
+//       setDealersList(all_dealers)
+//     }
+//   }
+//   useEffect(() => {
+//     get_dealers();
+//   },[]);  
+
+const get_dealers = useCallback(async () => {
+    try {
+      const res = await fetch(dealer_url, { method: "GET" });
+      const retobj = await res.json();
+      if (retobj.status === 200) {
+        let all_dealers = Array.from(retobj.dealers);
+        let uniqueStates = [...new Set(all_dealers.map((dealer) => dealer.state))];
+
+        setStates(uniqueStates);
+        setDealersList(all_dealers);
+      }
+    } catch (error) {
+      console.error("Error fetching dealers:", error);
     }
-  }
+  }, [dealer_url]); // Add dependency to avoid stale reference
+
   useEffect(() => {
     get_dealers();
-  },[]);  
+  }, [get_dealers]);
+
 
 
 let isLoggedIn = sessionStorage.getItem("username") != null ? true : false;
